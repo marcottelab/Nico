@@ -6,7 +6,7 @@ import regex as re
 
 script, org = argv
 
-dna_seqs = list(SeqIO.parse(org+" heme sequences.fasta","fasta"))
+dna_seqs = list(SeqIO.parse(org+"_sequences.fasta","fasta"))
 orfs = []
 for seq in dna_seqs:
 	orfs.append(SeqRecord(seq=Seq(max(re.findall(r'ATG(?:(?!TAA|TAG|TGA)...)*(?:TAA|TAG|TGA)',str(seq.seq)), key = len)),id=seq.id))
