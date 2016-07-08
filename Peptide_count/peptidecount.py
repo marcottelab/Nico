@@ -69,12 +69,12 @@ for key,grp in table.groupby(level=0): #given the dataset for the specific prote
 
 
 ##### PLOT #####
-#fig, ax = sns.plt.subplots(len(dir), 1, figsize=(7,5))
-#for a,key in zip(ax,dir.keys() ):
-#    y = dir[key]
-#    n = len(y)
-#    x = np.linspace(1,n,n)
-#    a.plot(x,y)
+fig, ax = sns.plt.subplots(len(dir), 1, figsize=(7,5))
+for a,key in zip(ax,dir.keys() ):
+    y = dir[key]
+    n = len(y)
+    x = np.linspace(1,n,n)
+    a.plot(x,y)
     # add labels/titles and such here
 
 plt.show()
