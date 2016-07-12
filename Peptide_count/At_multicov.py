@@ -5,6 +5,9 @@ from pandas import DataFrame,Series
 from regex import search,findall,finditer
 from ast import literal_eval
 
+#set visualization options for the data: do not summarize arrays with less than 4000 elements (all), fit every node into a line
+np.set_printoptions(threshold=4000,linewidth=10000)
+
 table = pd.read_csv('elution_peptides_positions_arath.csv',sep=',').ix[:,1:]
 
 
@@ -61,7 +64,7 @@ for prot in proteins:
 	print coverage(data), (coverage(data)).shape
 	print '###################################################'
 
-outfile = open("coverage_arath.txt", "w")
+outfile = open("coverage_arath.tsv", "w")
 
 for key,value in covdir.iteritems():
 	output = str(key) + "\t" + str(value) +"\n"
