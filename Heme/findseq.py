@@ -21,7 +21,6 @@ for i in range(len(orfs)):
 uniprot = []
 lengths=[]
 
-txt = open("translated_"+org+".txt","w")
 for i in peps:
 	try:
 		uniprot.append(SeqIO.read("All/"+i.id+".fasta","fasta").seq)
@@ -34,10 +33,10 @@ for i in peps:
 
 with open("translated_"+org+".txt","w") as file:
 	for i in range(len(peps)):
-		file.write(peps[i].id)
+		file.write('>'+str(peps[i].id))
 		file.write('\n')
 		file.write(str(peps[i].seq)[:-1])
 		file.write('\n'*2)	
-print "The translated sequences of the experimental proteins have been stored in a file called 'translated_%s.txt'\n" %(org)
+print "The translated sequences of the experimental proteins have been stored in a file called 'translated_%s.fasta'\n" %(org)
 
 print "All done!"
