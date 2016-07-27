@@ -100,11 +100,16 @@ final = tmp.join(multiboth)
 #reorder columns
 final = final[['Protein','Peptide','Fraction','Count','Sequence','Length','Start','End']]
 
-#reindex
-final = final.set_index(['Protein','Peptide'])
+#reindex to add Appearance
+final = final.set_index(['Protein','Peptide','Fraction'])
 #add 'Appearance' column for peptides that appear multiple times
 final['Appearance'] = final.groupby(final.index).cumcount() + 1 
+#reindex to original index
+final = final.reset_index().set_index(['Protein','Peptide'])
 
+#test peptide with multiple appearances
 print final.ix['sp|Q9FKA5|Y5957_ARATH'].ix['KPSYGR']
 
 final.to_csv("elution_peptides_numerical.csv")
+
+print "All done! Output file: elution_peptides_numerical.csv"
