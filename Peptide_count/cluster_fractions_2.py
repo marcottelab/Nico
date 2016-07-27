@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import regex as re
 from pandas import Series,DataFrame,read_csv
+from sklearn.preprocessing import normalize
 from sklearn.cluster import MeanShift,estimate_bandwidth
 
 script, protein_name = argv
@@ -24,16 +25,16 @@ data_wide = data_wide.join(data_prot2.set_index('Peptide')['Start']).sort_values
 #print data_wide
 print data_wide.ix[:,-1]
 #observation matrix
-matrix = data_wide.as_matrix()
+matrix= data_wide.ix[:,:-1].as_matrix()
 
 
 
 #run MeanShift  on matrix
-ms = MeanShift(cluster_all=False,bandwidth=3.53)
+ms = MeanShift(cluster_all=False,bandwidth=1.1)
 
-print estimate_bandwidth(matrix[:,:-1], quantile=0.3, random_state=0)
+print estimate_bandwidth(normalize(matrix), quantile=0.3, random_state=0)
 
-print ms.fit(matrix[:,:-1])
+print ms.fit(normalize(matrix))
 
 cluster_centers = ms.cluster_centers_
 labels = ms.labels_
@@ -44,6 +45,7 @@ print (data_wide).shape
 
 print labels
 exit()
+########################################################
 #when I get a robust clustering I will finish this script
 
 data_wide = data_wide.reset_index()
