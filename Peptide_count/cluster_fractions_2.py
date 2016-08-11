@@ -2,7 +2,10 @@ from sys import argv
 import numpy as np
 import pandas as pd
 import regex as re
+import matplotlib.pyplot as plt
+from itertools import cycle
 from pandas import Series,DataFrame,read_csv
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 from sklearn.cluster import MeanShift,estimate_bandwidth
 
@@ -10,6 +13,12 @@ script, protein_name = argv
 
 pd.set_option('display.width',120)
 data = read_csv("elution_peptides_numerical.csv",sep=',')
+
+#Principal Component Analysis, Mean Shift
+pca = PCA(n_components=2)
+ms = MeanShift(cluster_all=False,bandwidth=1.1)
+
+
 
 #default protein = tr|F4KHD5|F4KHD5_ARATH 
 data_prot =  data[data.Protein==protein_name].reset_index()
@@ -28,6 +37,13 @@ print data_wide.ix[:,-1]
 matrix= data_wide.ix[:,:-1].as_matrix()
 
 
+#run PCA
+matrix_pca = pca.fit(matrix).transform(matrix)
+
+print('explained variance ratio (first two components): %s'
+      % str(pca.explained_variance_ratio_))
+
+
 
 #run MeanShift  on matrix
 ms = MeanShift(cluster_all=False,bandwidth=1.1)
@@ -44,6 +60,17 @@ print (Series(labels)).shape
 print (data_wide).shape
 
 print labels
+
+
+print matrix_pca
+#plot
+#plt.figure()
+for c, i, label in zip(cycle("rmbcgykr"),range(14),labels):
+	plt.scatter(matrix_pca[i,0],matrix_pca[i,1])
+plt.show()
+
+
+
 exit()
 ########################################################
 #when I get a robust clustering I will finish this script
