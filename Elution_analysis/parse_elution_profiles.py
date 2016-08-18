@@ -63,11 +63,12 @@ def add_columns(fasta, exp_data, output_file):
 	proteome = list(SeqIO.parse(fasta,"fasta"))
 
 	#import experimental results from LC/MS
-	#data = pd.read_csv(exp_data,sep=',',header=0,names=['Protein','Peptide','Fraction','Count'])	
-	data = pd.read_csv(exp_data,usecols=['ProteinID','Peptide','FractionID','PeptideCount'])
-	data = data[['ProteinID','Peptide','FractionID','PeptideCount']]
-	data.columns = ['Protein','Peptide','Fraction','Count']
-	data =  data.dropna().set_index('Protein')
+	#data = pd.read_csv(exp_data,sep=',',header=0,names=['ProteinID','Peptide','Fraction','Count'])	
+        #Possible columns headers: ProteinID,Peptide,FractionID,PeptideCount,PeptideArea,Label
+	data = pd.read_csv(exp_data,usecols=['ProteinID','Peptide','FractionID','PeptideCount', 'PeptideArea', 'ExperimentID'])
+	#data = data[['ProteinID','Peptide','FractionID','PeptideCount',']
+	#data.columns = ['ProteinID','Peptide','Fraction','Count']
+	data =  data.dropna().set_index('ProteinID')
 	
 	
 	#create a list with the IDs and sequences of the proteins in the given proteome
@@ -77,7 +78,7 @@ def add_columns(fasta, exp_data, output_file):
 	        list_seq.append([str(protein.id),str(protein.seq)])
 	
 	#turn that list into a dataframe
-	sequences = DataFrame(list_seq,columns=['Protein','Sequence']).set_index('Protein')
+	sequences = DataFrame(list_seq,columns=['ProteinID','Sequence']).set_index('ProteinID')
 	
 	#append sequences to the original dataframe
 	tmp = data.join(sequences)
@@ -104,17 +105,18 @@ def add_columns(fasta, exp_data, output_file):
 	multiboth = pd.DataFrame({'Start':multistart, 'End':multiend}, index=multistart.index)
 	final = tmp.join(multiboth)
 	#reorder columns
-	final = final[['Protein','Peptide','Fraction','Count','Sequence','Length','Start','End']]
+	final = final[['ProteinID','Peptide','FractionID','PeptideCount','Sequence','Length','Start','End', 'ExperimentID', 'PeptideArea']]
 	
 	#reindex to add Appearance
-	final = final.set_index(['Protein','Peptide','Fraction'])
+	final = final.set_index(['ProteinID','Peptide','FractionID'])
 	#add 'Appearance' column for peptides that appear multiple times
 	final['Appearance'] = final.groupby(final.index).cumcount() + 1 
 	#reindex to original index
-	final = final.reset_index().set_index(['Protein','Peptide'])
+	final = final.reset_index().set_index(['ProteinID','Peptide'])
 	
 	#test peptide with multiple appearances
-	print final.ix['sp|Q9FKA5|Y5957_ARATH'].ix['KPSYGR']
+        #ONLY test for arabidopsis data
+	#print final.ix['sp|Q9FKA5|Y5957_ARATH'].ix['KPSYGR']
 	
 	final.to_csv(output_file)
 
