@@ -1,0 +1,188 @@
+---
+title: "Sparklines_colored"
+author: "Nicolas Gort Freitas"
+date: "July 26, 2016"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+require(ggplot2)
+require(cowplo t)
+require(gdata)
+require(gplots)
+require(reshape2)
+require(plyr)
+require(dplyr)
+require(purrr)
+require(stringr)
+require(tidyr)
+```
+
+
+
+
+
+
+```{r}
+
+
+sparklines <- function(z){
+    plt <- ggplot(z, aes(x=Fraction, y=Count, group=1)) +
+    {if(z$Label==1) {geom_line(size=0.5,aes(color='blue'))}} +
+    {if(z$Label==0) {geom_line(size=0.5) }} +
+    theme(legend.position="None")
+    
+    #print(plt)
+    ?g
+    final_plt <- ggplotGrob(plt)
+
+
+    print(final_plt)
+    #remove unnecessary plot elements
+    final_plt <- gtable_remove_grobs(final_plt, c('title', 'xlab', 'ylab', 'axis-b','axis-l'))
+    print(final_plt)
+        #compress unused plot space
+        final_plt <- gtable_squash_rows(final_plt, c(1, 2, 4, 5, 6))
+    return(final_plt)
+}
+
+
+```
+
+
+Read in experimental data
+```{r}
+labeled_data <- read.csv("labeled_peptides_F4KHD5_ARATH.csv", sep=",", header=TRUE)
+#data <- as.data.frame(lapply(data, unlist))
+labeled_data$X <- NULL
+labeled_data$index <- NULL
+# labeled_data$Protein <- NULL
+```
+
+
+
+
+
+
+
+Coverage plot (function)
+```{r}
+rectangles <- function(row){
+    # row1 = data[1:12,]
+    # row2
+    row$dummy_y <- 20
+    
+    rect <- ggplot(data = row, aes(x=max(row$Length), y = dummy_y)) +
+          theme(axis.text = element_text(size=8)) +
+      #xlim(0,max(row$Length)) +
+      geom_blank() +
+      theme(
+        axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.line.y=element_blank(),
+        axis.line.x=element_blank()
+
+        ) +
+      geom_rect(aes(xmin=0, xmax=max(row$Length), ymin=0, ymax=20,fill=I('grey'))) +
+      geom_vline(xintercept=seq(0, max(final_prot$Length), by=100)) +
+      #scale_x_continuous(breaks = seq(0, max(row$Length), 100),limits=c(0,max(row$Length))) +
+      #scale_y_continuous(breaks = NULL) +
+      geom_rect(aes(xmin=row$Start, xmax=row$End, ymin=0, ymax=20,fill=I('blue'))) +
+    geom_text(aes(label=as.character(head(row$Peptide,1))),size=4,position = position_nudge(x=-0.05*(max(final_prot$Length)),y=-5))#as.character(head(row$Peptide,1)))
+      
+    rect <- ggplotGrob(rect)
+
+
+    print(rect)
+    #remove unnecessary plot elements
+    final_plt <- gtable_remove_grobs(rect, c('title', 'xlab', 'ylab', 'axis-b','axis-l'))
+    print(rect)
+        #compress unused plot space
+        rect <- gtable_squash_rows(rect, c(1, 2, 4, 5, 6))
+    return(rect)
+  
+    #facet_grid(Peptide ~ .)
+}
+```
+
+```{r}
+# 
+#    #Choose a group to plot sparklines for
+#    #Here, groups are numbered 1-700
+#    #for( i in seq(302, 302)){
+#   data %>% group_by(Protein) %>% summarize(sum=sum(Count)) -> data2
+#   data2$Protein <- reorder(data2$Protein,data2$sum)
+#  
+#     #Get just one protein to test
+# #sp|F4I7I0|ALAT1_ARATH  #sp|Q9FKA5|Y5957_ARATH
+#   for(proteinname in tail(data2[order(data.frame(data2$sum)),]$Protein,10)){
+#           data_protein <- data %>% filter(Protein==proteinname) #Find the caspase ENS Id for a good example of split peptides
+#           #To do: order n term to c term using start and end
+# 
+#           print(data_protein)
+#           data_protein <- droplevels(data_protein)
+# 
+#             #sorting function
+#           #id <- order(sapply(data_protein$Start,function(i)i[1]))
+# 
+#           #data_protein <- data_protein[order(data.frame(data_protein$Start)),]
+# 
+
+          #Make a wide matrix from the tidy data
+          data_wide <- spread(labeled_data, Fraction, Count)
+          data_wide
+          #Fill in NA with 0's to complete the matrix
+          data_wide[is.na(data_wide)] <- 0
+          data_wide
+
+          #sorting function
+          id2 <- (sapply(final_prot$Start,function(i)i[1]))
+
+          #Turn the wide matrix tidy.
+          final_prot <- data_wide %>% gather(Fraction, Count, -Protein, -Peptide, -Start, -End, -Length,-Appearance, -Sequence, -Label)
+          final_prot <- final_prot[order(data.frame(final_prot$Start)),]#final_prot$Start[1]),]
+
+          final_prot$Peptide <- reorder(final_prot$Peptide, final_prot$Start)
+          #filtered <- final_prot# %>% filter(Peptide=="  ")
+          #Feed peptides into function
+          final_prot %>% split(.$Peptide) %>% map(sparklines) -> plotlist2
+          plotlist2
+
+          #Plot ggplot objects
+          clusterplot <- plot_grid(plotlist = plotlist2, ncol=1, align = "v")
+
+          final_prot  %>% split(.$Peptide) %>% map(rectangles) -> listrects
+      coverage <- plot_grid(plotlist = listrects, ncol=1, align = "v")
+
+   ##sub  <- ggdraw()+draw_label(members, size=20)
+   ##title <- ggdraw()+draw_label(paste("Cluster",   outfilecluster), vjust=0, size=20)
+      title <-ggdraw()+draw_label(paste("Protein:"), vjust=0, size=20)
+      
+      figure <-  plot_grid(clusterplot, coverage, nrow=1,rel_heights = c(0.1,1))
+      
+      figure_with_title <- plot_grid(title,figure,nrow=2,rel_heights = c(.1,1))
+      figure_with_title
+      t#ggsave(filename=paste('figure_', proteinname, '.png',sep=''),plot=figure_with_title)
+  
+```
+
+Plot everything
+```{r}
+
+# final_prot  %>% split(.$Peptide) %>% map(rectangles) -> listrects
+# coverage <- plot_grid(plotlist = listrects, ncol=1, align = "v")
+#   
+# 
+# plot_grid(clusterplot, coverage, nrow=1)
+```
+
+
+

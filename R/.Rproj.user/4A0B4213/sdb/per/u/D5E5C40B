@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(dplyr)\nlibrary(ggplot2)\nlibrary(utils)\n\nView(pressure)\nView(iris)\npressure2 <- pressure\npressure2 <- mutate(pressure2,pressure2=pressure+15)\n\n\nqplot(temperature,pressure,data=pressure)\n\nggplot(data=pressure2,aes(temperature,pressure2))\n\n\n\n\nggp <- ggplot(data=pressure, aes(temperature,pressure)) +\n  geom_point(aes(color='cyl'))  +\n  labs(title='Pressure') +\n  geom_line() +\n  geom_smooth() +\n  scale_color_gradient() +\n  theme(plot.title = element_text(family=\"Helvetica\")) +\n  labs(x='Temperature (K)',y='Pressure (hPA)')\n  \n  \n\n\nggp\n",
+    "created" : 1466799561214.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "1339846648",
+    "id" : "D5E5C40B",
+    "lastKnownWriteTime" : 4347441312,
+    "last_content_update" : 1466806274129,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled4"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

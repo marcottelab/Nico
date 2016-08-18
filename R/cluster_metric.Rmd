@@ -1,0 +1,99 @@
+---
+title: "cluster_metric"
+author: "Nicolas Gort Freitas"
+date: "August 3, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+#Heat
+```{R}
+    heatmap <- function(){
+    data_wide2 <- data_wide
+    data_wide2$Protein <- reorder(data_wide2$Protein,data_wide2$Start)
+    data_wide2 <- data_wide2[order(data_wide2$Start),]
+    pre_matrix <- data_wide2[,8:ncol(data_wide2)]
+    exp_data <- as.matrix(pre_matrix)
+
+    square <- melt(cor(t(exp_data)))
+    # 
+    idx <- as.vector(square$Var1[1:97])
+    square$Var1 <- sapply(square$Var1,function(x){return(which(idx == x))})
+    square$Var2 <- sapply(square$Var2,function(x){return(which(idx == x))})
+    
+    
+    plot <- ggplot(square,aes(Var1,Var2,fill=value)) + 
+        geom_tile() +
+        #theme(panel.grid=element_line()) +
+        scale_fill_gradient2(limits=c(-1,1),midpoint=0,low='turquoise2',mid='#56B4E9',high='#0072DF') +
+        scale_x_reverse(lim=c(97,0)) +
+        #scale_fill_manual(values=('red','blue')
+        coord_flip() +
+        theme(axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.line.y=element_blank(),
+        axis.line.x=element_blank())
+    # 
+    # plot <- ggplotGrob(plot)
+    # 
+    # #remove unnecessary plot elements
+    # plot <- gtable_remove_grobs(plot, c('title', 'xlab', 'ylab', 'axis-b','axis-l'))
+    #     #compress unused plot space
+    # plot <- gtable_squash_rows(plot, c(1, 2, 4, 5, 6))
+    return(plot) #plot matrix
+    }
+heatmap()
+```
+
+#Metric
+```{R}
+comp_metric <- function(){
+    Ni <- vector(mode="numeric", length=nrow(square))
+    iC <- vector(mode="numeric", length=0)
+    NC <- vector(mode="numeric", length=0)
+    metric <- vector(mode="numeric", length=0)
+    
+    for(i in 1:nrow(square)){
+        N_to_i <- median(square[1:i,1:i])
+        i_to_C <- median(square[i:nrow(square),i:ncol(square)])
+        N_vs_C <- median(square[1:i,i:ncol(square)])
+        Ni[i] <- N_to_i
+        iC[i] <- i_to_C
+        NC[i] <- N_vs_C
+        metric[i] <- N_to_i * i_to_C / N_vs_C**2
+    }
+}
+```
+
+#plot
+```{R}
+metric_data <- data.frame(reduce(c(Ni,iC,NC,metric),append))
+names(metric_data) <- 'data'
+metric_data$Position <- rep(1:97,4)
+metric_data['group']=data.frame(reduce(c(rep(c('N-terminus to x'),97),rep(c('x to C-terminus'),97),rep(c('N-term vs C-term'),97),rep(c('Comparison metric'),97)),append))
+
+metric_plot <- function(){
+    plt <- ggplot(metric_data,aes(x=Position,y=data)) +
+    geom_line(aes(group=group,color=group)) +
+    scale_x_reverse( lim=c(length(metric_data$Position)/4,length(metric_data$Position)/80)) +
+    ylim(0,max(metric_data[metric_data$Position >= ceiling(length(metric_data$Position)/80),]$data)) +
+    theme(axis.title.x=element_blank()) +
+    coord_flip()
+    return(plt)
+    }
+metric_plot()
+
+
+metric_figure <- plot_grid(heatmap(),metric_plot(),nrow=1,align='h')
+metric_figure
+```

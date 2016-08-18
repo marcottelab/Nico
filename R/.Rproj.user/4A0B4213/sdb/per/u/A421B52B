@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "pew <- read.delim(\n  file = \"http://stat405.had.co.nz/data/pew.txt\",\n  header = TRUE,\n  stringsAsFactors = FALSE,\n  check.names = F\n)\ntb <- read.csv(\n  file = \"http://stat405.had.co.nz/data/tb.csv\",\n  header = TRUE, \n  stringsAsFactors = FALSE\n)\n\nlibrary(reshape2)\n\n# set column `new_sp` to NULL and clean up column names\ntb$new_sp = NULL\nnames(tb) <- gsub(\"new_sp_\", \"\", names(tb))\n\n# Use na.rm = TRUE to remove missing observations\ntb_tidy <- melt(\n  data = tb,\n  id = c(\"iso2\", \"year\"),\n  variable.name = \"gender_age\",\n  value.name = \"cases\",\n  na.rm = TRUE\n)\n\n# split gender_age into gender and age group\nlibrary(plyr)\ntb_tidy <- mutate(tb_tidy,\n                  gender = sub(\"^([m|f])(.*)$\", \"\\\\1\", gender_age),\n                  age = sub(\"^([m|f])(.*)$\", \"\\\\2\", gender_age),\n                  gender_age = NULL\n)\ntb_tidy <- tb_tidy[c('iso2', 'year', 'gender', 'age', 'cases')]\n",
+    "created" : 1466632034021.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "283934427",
+    "id" : "A421B52B",
+    "lastKnownWriteTime" : 4442454976,
+    "last_content_update" : 1466634065346,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled3"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

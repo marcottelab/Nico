@@ -1,0 +1,117 @@
+---
+title: "complexes"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+require(ggplot2)
+require(cowplot)
+require(gdata)
+require(gplots)
+require(reshape2)
+require(plyr)
+require(dplyr)
+require(purrr)
+require(stringr)
+require(tidyr)
+```
+
+
+
+
+
+
+```{r}
+
+
+plotting <- function(z){
+    plt <- ggplot(z, aes(x=Fraction, y=Count, group=1)) +
+    geom_line(size=0.5) +
+    theme(legend.position="None")
+    
+    #print(plt)
+    
+    final_plt <- ggplotGrob(plt)
+
+
+    print(final_plt)
+    #remove unnecessary plot elements
+    final_plt <- gtable_remove_grobs(final_plt, c('title', 'xlab', 'ylab', 'axis-b','axis-l'))
+    print(final_plt)
+        #compress unused plot space
+        final_plt <- gtable_squash_rows(final_plt, c(1, 2, 4, 5, 6))
+    return(final_plt)
+}
+
+
+```
+
+Format the Start and End columns into lists
+```{r}
+vect <- function(fac){
+    str <- as.character(fac)
+    return(as.list(strsplit(substr(str,2,nchar(str)-1),",")))
+    #return(data.frame(lapply(str, `length<-`, max(lengths(str)))))
+}
+```
+
+Read in experimental data
+```{r}
+data <- read.csv("elution_peptides_positions_arath.csv", sep=",", header=TRUE)
+data <- mutate(data,Start=vect(Start),End=vect(End))
+#data <- as.data.frame(lapply(data, unlist))
+data$X <- NULL
+```
+
+
+
+
+```{r}
+
+   #Choose a group to plot sparklines for
+   #Here, groups are numbered 1-700
+   #for( i in seq(302, 302)){
+    
+ 
+    #Get just one protein to test
+
+    data_protein <- data %>% filter(Protein=='sp|F4I7I0|ALAT1_ARATH') #Find the caspase ENS Id for a good example of split peptides
+    #To do: order n term to c term using start and end
+    print(data_protein)
+    data_protein <- droplevels(data_protein)
+    
+      #sorting function
+    #id <- order(sapply(data_protein$Start,function(i)i[1]))
+    
+    #data_protein <- data_protein[order(data.frame(data_protein$Start)),]
+
+    
+    #Make a wide matrix from the tidy data
+    data_wide <- spread(data_protein, Fraction, Count)
+    data_wide
+    #Fill in NA with 0's to complete the matrix
+    data_wide[is.na(data_wide)] <- 0
+    data_wide
+    
+    #sorting function
+    id2 <- (sapply(final_prot$Start,function(i)i[1]))
+    
+    #Turn the wide matrix tidy. 
+    final_prot <- data_wide %>% gather(Fraction, Count, -Protein, -Peptide, -Start, -End, -Length, -Sequence)
+    final_prot <- final_prot[order(data.frame(final_prot$Start)),]#final_prot$Start[1]),]
+
+ #   filtered <- final_prot# %>% filter(Peptide=="  ")
+    #Feed peptides into function
+    final_prot  %>% split(.$Peptide) %>% map(plotting) -> plotlist2
+    plotlist2
+    
+    #Plot ggplot objects
+    clusterplot <- plot_grid(plotlist = plotlist2, ncol=1, align = "v")
+
+    clusterplot
+
+```

@@ -1,0 +1,93 @@
+---
+title: "complexes"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+require(ggplot2)
+require(cowplot)
+require(gdata)
+require(gplots)
+require(reshape2)
+require(plyr)
+require(dplyr)
+require(purrr)
+require(stringr)
+require(tidyr)
+```
+
+
+
+
+
+
+```{r}
+
+
+plotting <- function(z){
+    plt <- ggplot(z, aes(x=frac, y=pepcounts, group=1)) +
+    geom_line(size=0.5) +
+    theme(legend.position="None")
+    
+    #print(plt)
+    
+    final_plt <- ggplotGrob(plt)
+
+
+    #print(final_plt)
+    #remove unnecessary plot elements
+    final_plt <- gtable_remove_grobs(final_plt, c('title', 'xlab', 'ylab', 'axis-b','axis-l'))
+    print(final_plt)
+        #compress unused plot space
+        final_plt <- gtable_squash_rows(final_plt, c(1, 2, 4, 5, 6))
+    return(final_plt)
+}
+
+
+```
+
+Read in experimental data
+```{r}
+nodes <- read.csv("Hs_helaN_1003.pep_list_FDR0010", sep="\t", header=FALSE)
+```
+
+
+```{r}
+
+   #Choose a group to plot sparklines for
+   #Here, groups are numbered 1-700
+   #for( i in seq(302, 302)){
+    
+ 
+    #Get just one protein to test
+
+    protein <- nodes %>% filter(V1=='ENSP00000215793') #Find the caspase ENS Id for a good example of split peptiddes
+    #To do: order n term to c term using start and end
+
+    print(protein)
+    protein <- droplevels(protein)
+    
+    #Make a wide matrix from the tidy data
+    data_wide <- spread(protein, V2, V4)
+    data_wide
+    #Fill in NA with 0's to complete the matrix
+    data_wide[is.na(data_wide)] <- 0
+    data_wide
+    
+    #Turn the wide matrix tidy. 
+    final_prot <- data_wide %>% gather(frac, pepcounts, -V1, -V3)
+    
+    #Feed peptides into function
+     final_prot  %>% split(.$V3) %>% map(plotting) -> plotlist2
+    plotlist2
+    
+    #Plot ggplot objects
+    clusterplot <- plot_grid(plotlist = plotlist2, ncol=1, align = "v")
+
+    clusterplot
+
+```

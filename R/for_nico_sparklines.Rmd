@@ -1,0 +1,80 @@
+---
+title: "complexes"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+require(ggplot2)
+require(cowplot)
+require(gdata)
+require(gplots)
+require(reshape2)
+require(plyr)
+require(dplyr)
+require(purrr)
+require(stringr)
+```
+
+
+
+
+
+
+```{r}
+
+
+plotting <- function(z){
+    plt <- ggplot(z, aes(x=fraction, y=speccounts, group=AllMembers, color=AllMembers)) + 
+    geom_line(size=0.5) +
+    theme(legend.position="none") +
+    final_plt <- ggplotGrob(plt)
+
+
+    print(final_plt)
+    final_plt <- gtable_remove_grobs(final_plt, c('title', 'xlab', 'ylab', 'axis-b','axis-l'))
+    print(final_plt)
+        final_plt <- gtable_squash_rows(final_plt, c(1, 2, 4, 5, 6))
+    return(final_plt)
+}
+
+
+```
+
+Read in experimental data
+```{r}
+arathtraesorysj_node_table
+
+nodes <- read.csv("arathtraesorysj_node_table.csv", sep=",", header=TRUE)
+```
+
+
+
+```{r}
+
+   #Choose a group to plot sparklines for
+   #Here, groups are numbered 1-700
+   for( i in seq(302, 302)){
+    
+    clusterID <- i
+    nodes_tmp <- nodes %>% filter(clustid==clusterID)
+    print(nodes_tmp)
+
+   #What to group by, then plotting function applied    
+   nodes_tmp %>% split(.$AllMembers) %>% map(plotting) -> plotlist2
+   plotlist2
+   clusterplot <- plot_grid(plotlist = plotlist2, ncol=1, align = "v")
+
+   clusterplot
+
+   }
+
+
+
+```
+
+
+
