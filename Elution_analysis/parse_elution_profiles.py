@@ -63,7 +63,10 @@ def add_columns(fasta, exp_data, output_file):
 	proteome = list(SeqIO.parse(fasta,"fasta"))
 
 	#import experimental results from LC/MS
-	data = pd.read_csv(exp_data,sep=' ',header=0,names=['Protein','Peptide','Fraction','Count'])
+	#data = pd.read_csv(exp_data,sep=',',header=0,names=['Protein','Peptide','Fraction','Count'])	
+	data = pd.read_csv(exp_data,usecols=['ProteinID','Peptide','FractionID','PeptideCount'])
+	data = data[['ProteinID','Peptide','FractionID','PeptideCount']]
+	data.columns = ['Protein','Peptide','Fraction','Count']
 	data =  data.dropna().set_index('Protein')
 	
 	
