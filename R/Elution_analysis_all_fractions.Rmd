@@ -8,7 +8,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r}
-setwd('~/Dropbox/R/Marcotte')
+#setwd('~/Dropbox/R/Marcotte')
 
 require(ggplot2)
 require(cowplot)
@@ -20,7 +20,7 @@ require(dplyr)
 require(purrr)
 require(stringr)
 require(tidyr)
-require(gridExtra)
+
 ```
 
 
@@ -33,8 +33,12 @@ normalit<-function(m){
 
 sparkline <- function(z){
     
-    z2 <- z %>% group_by(experimentID) %>% mutate(speccounts = normalit(speccounts))
-    plt <- ggplot(z2, aes(x=Fraction, y=Count, group=1)) +
+    z <- z %>% group_by(experimentID) %>% mutate(speccounts = normalit(speccounts))
+    
+    #If there is one group 
+    #plt <- ggplot(z, aes(x=FractionID, y=PeptideCount, group=1)) +
+    plt <- ggplot(z, aes(x=FractionID, y=PeptideCount, group=ExperimentID)) +
+    #If there is more than 1 group 
     geom_line(size=0.5) +
     theme(legend.position="None")
     
@@ -101,8 +105,11 @@ rectangles <- function(row){
 #Heatmap
 ```{R}
     heatmap <- function(exp_data){
-    square <- melt(cor(t(exp_data)))
-    # 
+    print(head(exp_data))
+    print(head(t(exp_data)))
+    square <-melt(cor(t(exp_data)))
+    0 -> square[is.na(square)]
+    
     idx <- as.vector(square$Var1[1:max(square)])
     square$Var1 <- sapply(square$Var1,function(x){return(which(idx == x))})
     square$Var2 <- sapply(square$Var2,function(x){return(which(idx == x))})
@@ -137,10 +144,20 @@ rectangles <- function(row){
 ```{R}
 metric_plot <- function(exp_data){
        square <- as.matrix(cor(t(exp_data)))
+       #print(square)
+       #print(nrow(square))
+       
+     square[is.na(square)] <- 0
+     #print(square)
+     
+     
      Ni <- vector(mode="numeric", length=nrow(square))
     iC <- vector(mode="numeric", length=0)
     NC <- vector(mode="numeric", length=0)
     metric <- vector(mode="numeric", length=0)
+    
+    
+    
     for(i in 1:nrow(square)){
         N_to_i <- median(square[1:i,1:i])
         i_to_C <- median(square[i:nrow(square),i:ncol(square)])
@@ -150,20 +167,28 @@ metric_plot <- function(exp_data){
         NC[i] <- N_vs_C
         metric[i] <- N_to_i * i_to_C / N_vs_C**2
     }
-
+    
+    
     metric_data <- data.frame(reduce(c(Ni,iC,NC,metric),append))
     names(metric_data) <- 'data'
+   
+    
+    
     metric_data$Residue <- rep(1:ncol(square),4)
     metric_data['group']=data.frame(reduce(c(rep(c('N-terminus to x'),ncol(square)),rep(c('x to C-terminus'),ncol(square)),rep(c('N-term vs C-term'),ncol(square)),rep(c('Comparison metric'),ncol(square))),append))
     metric_data[metric_data$Residue < ceiling(max(metric_data$Residue)*0.05) | metric_data$Residue  > max(metric_data$Residue)*0.95,]$data <- NA
-
+    
+    #print(head(metric_data))
+    
     y_min = round(min(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE),2)
-    x_max = metric_data[metric_data$data == max(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE) & !is.na(metric_data$data) ,]$Residue
-    x_min = metric_data[metric_data$data == min(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE) & !is.na(metric_data$data) ,]$Residue
-    y_max = round(max(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE),2)
-
+        x_max = metric_data[metric_data$data == max(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE) & !is.na(metric_data$data) ,]$Residue
+    
+     x_min = metric_data[metric_data$data == min(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE) & !is.na(metric_data$data) ,]$Residue
+        y_max = round(max(metric_data[metric_data$group == 'Comparison metric',]$data,na.rm=TRUE),2)
+    
     plt <- ggplot(metric_data,aes(x=Residue,y=data)) +
     geom_line(size=3,aes(group=group,color=group)) +
+        
     scale_x_reverse(expand=c(0,0), breaks = round(seq(0,ncol(square),by=5))) +
     ylim(0,max(metric_data[metric_data$Residue >= ceiling(length(metric_data$Residue)/80),]$data)) +
     theme(axis.title.x=element_blank(),
@@ -171,16 +196,20 @@ metric_plot <- function(exp_data){
         legend.key.size = unit(0.6, "cm"),
         legend.text = element_text(size=8),
 
-         legend.position=c(.6, .8)) +
+        legend.position=c(.6, .8)) +
     annotate("text",x=x_max,Inf, label=as.character((paste('Max =',as.character(y_max)))),hjust=1,vjust=1) +
     annotate("text",x=x_min,Inf, label=as.character((paste('Min =',as.character(y_min)))),hjust=1,vjust=1) +
     coord_flip()
-    #plt
+    print("placeholder 7") 
+    print(plt)
     plt <- ggplotGrob(plt)
+    print(plt)
     plt <- gtable_remove_grobs(plt, c('title', 'xlab', 'ylab', 'spacer','axis-b'))
+    ##print(plt)
     plt <- gtable_squash_rows(plt, c(1, 2, 4, 5, 6))
+    #print(plt)
     plt <- gtable_squash_cols(plt, c(1, 2, 5, 6))
-
+    #print(plt)
 
     return(plot_grid(plt))
     }
@@ -188,8 +217,9 @@ metric_plot <- function(exp_data){
 
 Read in experimental data
 ```{r}
-data <- read.csv("test_3exp.csv", sep=",", header=TRUE) %>% spread(Fraction, Count) %>% gather(Fraction, Count, -Protein, -Peptide, -Start, -End, -Length,-Appearance, -Sequence)
-data[is.na(data_wide)] <- 0
+data <- read.csv("Tcell_2502_Cyto_sequence_annotated.csv", sep=",", header=TRUE) %>% spread(FractionID, PeptideCount) %>% gather(FractionID, PeptideCount, -ProteinID, -Peptide, -Start, -End, -Length,-Appearance, -ExperimentID, -PeptideArea, -Sequence)
+
+data[is.na(data)] <- 0
 ```
 
 
@@ -197,15 +227,15 @@ data[is.na(data_wide)] <- 0
 ```{r}
 
 #find the proteins with most unique peptides identified
- #data %>% group_by(Protein) %>% summarize(Pep_number=length(unique(Peptide))) -> data2
-#reorder this temporal data set by number of unique peptides
- #data2$Protein <- reorder(data2$Protein,data2$Pep_number)
+ data %>% group_by(ProteinID) %>% summarize(Pep_number=length(unique(Peptide))) -> data2
+#reorder this temporary data set by number of unique peptides
+ data2$ProteinID <- reorder(data2$ProteinID,data2$Pep_number)
  
     #Analyze iteratively the n proteins with most peptides
 #sp|F4I7I0|ALAT1_ARATH  #sp|Q9FKA5|Y5957_ARATH #tr|F4KHD5|F4KHD5_ARATH #example proteins for A. thaliana
-  #for(protein_name in tail(data2[order(data.frame(data2$Pep_number)),]$Protein,90)){
-  for(protein_name in c('sp|Q9SI75|EFGC_ARATH','sp|O81283|TC159_ARATH','sp|Q9LSB4|NAI2_ARATH','sp|Q9SI75|EFGC_ARATH','sp|Q9XI36|MBD10_ARATH','sp|Q56YU0|AL2C4_ARATH','sp|Q38858|CALR2_ARATH','tr|F4ISU2|F4ISU2_ARATH','tr|F4J9K9|F4J9K9_ARATH','tr|F4KHD5|F4KHD5_ARATH')){   #'tr|Q8VZW6|Q8VZW6_ARATH')){ #test proteins
-          data_protein <- data %>% filter(Protein==protein_name) #Find the caspase ENS Id for a good example of split peptides
+  for(protein_name in tail(data2[order(data.frame(data2$Pep_number)),]$ProteinID,5)){
+  #for(protein_name in c('sp|Q9SI75|EFGC_ARATH','sp|O81283|TC159_ARATH','sp|Q9LSB4|NAI2_ARATH','sp|Q9SI75|EFGC_ARATH','sp|Q9XI36|MBD10_ARATH','sp|Q56YU0|AL2C4_ARATH','sp|Q38858|CALR2_ARATH','tr|F4ISU2|F4ISU2_ARATH','tr|F4J9K9|F4J9K9_ARATH','tr|F4KHD5|F4KHD5_ARATH')){   #'tr|Q8VZW6|Q8VZW6_ARATH')){ #test proteins
+          data_protein <- data %>% filter(ProteinID==protein_name) #Find the caspase ENS Id for a good example of split peptides
           #To do: order n term to c term using start and end
         print(paste('Processing',protein_name))
           #print(data_protein)
@@ -221,7 +251,7 @@ data[is.na(data_wide)] <- 0
           #for heatmap and metric
 
           #Make a wide matrix from the tidy data
-          data_wide <- spread(data_protein, Fraction, Count)
+          data_wide <- spread(data_protein, FractionID, PeptideCount)
           
           #Fill in NA with 0's to complete the matrix
           data_wide[is.na(data_wide)] <- 0
@@ -229,13 +259,13 @@ data[is.na(data_wide)] <- 0
           
           #for heatmap and metric
              data_wide2 <- data_wide
-    data_wide2$Protein <- reorder(data_wide2$Protein,data_wide2$Start)
+    data_wide2$ProteinID <- reorder(data_wide2$ProteinID,data_wide2$Start)
     data_wide2 <- data_wide2[order(data_wide2$Start),]
     pre_matrix <- data_wide2[,8:ncol(data_wide2)]
     exp_data <- as.matrix(pre_matrix)
     
           #Turn the wide matrix tidy.
-          final_prot <- data_wide %>% gather(Fraction, Count, -Protein, -Peptide, -Start, -End, -Length,-Appearance, -Sequence)
+          final_prot <- data_wide %>% gather(FractionID, PeptideCount, -ProteinID, -Peptide, -Start, -End, -Length,-Appearance, -Sequence, -ExperimentID, -PeptideArea)
           final_prot <- final_prot[order(data.frame(final_prot$Start)),]#final_prot$Start[1]),]
 
           final_prot$Peptide <- reorder(final_prot$Peptide, final_prot$Start)
@@ -249,10 +279,13 @@ data[is.na(data_wide)] <- 0
 
 
 title <-ggdraw()+draw_label(paste("Protein:",protein_name), vjust=0, size=20)
+
+      hm <- heatmap(exp_data)
+      mp <- metric_plot(exp_data)
       
       figure <-  plot_grid(clusterplot, coverage,heatmap(exp_data), metric_plot(exp_data), nrow=1)
       figure_with_title <- plot_grid(title,figure,nrow=2,rel_heights = c(.05,1))
-      ggsave(filename=paste('Test_multiexp/figure_', protein_name,'.png',sep=''), width=16, height=10, units='in', plot=figure_with_title)
+      ggsave(filename=paste('figure_', protein_name,'.png',sep=''), width=16, height=10, units='in', plot=figure_with_title)
 
   } 
 ```
